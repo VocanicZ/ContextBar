@@ -79,10 +79,31 @@ else
 fi
 chmod +x "$SCRIPT_DST"
 
-# ---- Build the statusLine command (max_bar baked in per scope) --------------
-CMD="CONTEXTBAR_MAX_BAR=$MAX_BAR"
-[ -n "$ACTUAL_MAX" ] && CMD="$CMD CONTEXTBAR_ACTUAL_MAX=$ACTUAL_MAX"
-CMD="$CMD bash $SCRIPT_DST"
+# ---- Register as the LEFT part of the shared status bar ---------------------
+# (max_bar baked in per scope)
+LEFT_CMD="CONTEXTBAR_MAX_BAR=$MAX_BAR"
+[ -n "$ACTUAL_MAX" ] && LEFT_CMD="$LEFT_CMD CONTEXTBAR_ACTUAL_MAX=$ACTUAL_MAX"
+LEFT_CMD="$LEFT_CMD bash '$SCRIPT_DST'"
+
+BAR_DIR="$HOME/.claude/statusbar"
+COMPOSE="$BAR_DIR/compose.sh"
+REG="$BAR_DIR/parts.json"
+mkdir -p "$BAR_DIR"
+
+# Record our slot in the shared registry, preserving any UsageBar right_cmd.
+EXIST="{}"; [ -f "$REG" ] && EXIST=$(cat "$REG")
+echo "$EXIST" | jq --arg left "$LEFT_CMD" \
+  '. + {left_cmd:$left, reserve:(.reserve // 0), width_fallback:(.width_fallback // 120)}' > "$REG.tmp"
+mv "$REG.tmp" "$REG"
+
+# Drive the status line through the shared composer when it exists (UsageBar
+# installed); otherwise run standalone. The registry now has left_cmd either way,
+# so a later UsageBar install composes correctly regardless of order.
+if [ -f "$COMPOSE" ]; then
+  CMD="bash '$COMPOSE'"
+else
+  CMD="$LEFT_CMD"
+fi
 
 # ---- Patch the chosen settings.json -----------------------------------------
 SUDO=""
@@ -103,4 +124,5 @@ echo "✓ ContextBar installed"
 echo "  script:   $SCRIPT_DST"
 echo "  settings: $SETTINGS  (scope: $SCOPE)"
 echo "  max_bar:  $MAX_BAR tokens${ACTUAL_MAX:+   actual_max override: $ACTUAL_MAX}"
+[ -f "$COMPOSE" ] && echo "  composed: via $COMPOSE (shares the line with UsageBar)"
 echo "  Restart Claude Code (or wait for refresh) to see the bar."

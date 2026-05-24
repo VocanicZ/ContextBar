@@ -93,6 +93,15 @@ internal `/context` knows the exact values.
 - `bash`, `jq`, `awk`, `curl`
 - A terminal/font with Unicode block glyphs (`⛁ ⛀ ⛶`)
 
+## Pairs with UsageBar
+
+ContextBar shares the single status line with [UsageBar](https://github.com/VocanicZ/UsageBar)
+(Claude usage-limit meters). When both are installed, a small composer keeps **context on the
+left and usage on the right**, in any install order. ContextBar records itself in
+`~/.claude/statusbar/parts.json`; if `~/.claude/statusbar/compose.sh` (shipped by UsageBar)
+is present, the status line is driven through it. ContextBar runs standalone when UsageBar
+isn't installed.
+
 ## Uninstall
 
 Remove the `"statusLine"` key from the relevant `settings.json` and delete
